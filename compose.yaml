@@ -1,0 +1,33 @@
+volumes:
+  data-db-17:
+
+services:
+  openhands-app:
+    image: docker.all-hands.dev/all-hands-ai/openhands:0.29
+    environment:
+      SANDBOX_RUNTIME_CONTAINER_IMAGE: "docker.all-hands.dev/all-hands-ai/runtime:0.29-nikolaik"
+      LOG_ALL_EVENTS: "true"
+      # DB への接続情報を runtime に渡す
+      SANDBOX_RUNTIME_STARTUP_ENV_VARS: '{"DATABASE_URL":"postgresql://postgres:postgres@host.docker.internal:5432/develop?schema=public&statement_cache_size=0"}'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.openhands-state:/.openhands-state
+    ports:
+      - 3000:3000
+    pull_policy: build
+    stdin_open: true
+    tty: true
+
+  db:
+    image: postgres:17.2-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - data-db-17:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: develop
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: "pg_isready -U postgres || exit 1"
+      interval: 2s
